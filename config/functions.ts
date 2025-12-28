@@ -67,6 +67,18 @@ export const github_get_file_content = async (params: {
   return res;
 };
 
+export const manage_memory = async (params: {
+  key: string;
+  value: string;
+}) => {
+  const res = await fetch("/api/functions/manage_memory", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  }).then((res) => res.json());
+  return res;
+};
+
 export const functionsMap = {
   get_weather: get_weather,
   get_joke: get_joke,
@@ -74,4 +86,5 @@ export const functionsMap = {
   github_create_file: github_create_file,
   github_list_repos: github_list_repos,
   github_get_file_content: github_get_file_content,
+  manage_memory: manage_memory,
 };

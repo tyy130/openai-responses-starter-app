@@ -11,13 +11,12 @@ const Assistant = dynamic(() => import("@/components/assistant"), {
   loading: () => <div className="h-full w-full bg-background animate-pulse" />,
 });
 
-const ToolsPanel = dynamic(() => import("@/components/tools-panel"), {
+const Sidebar = dynamic(() => import("@/components/sidebar"), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-card animate-pulse" />,
+  loading: () => <div className="h-full w-[260px] bg-card animate-pulse" />,
 });
 
 export default function Main() {
-  const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
   const router = useRouter();
   const { resetConversation } = useConversationStore();
   const { setGoogleIntegrationEnabled, setGithubEnabled } = useToolsStore();
@@ -42,8 +41,13 @@ export default function Main() {
   }, [router, resetConversation, setGoogleIntegrationEnabled, setGithubEnabled]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background text-foreground overflow-hidden">
-      {/* Main Chat Area */}
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      {/* Left Sidebar */}
+      <aside className="hidden md:block h-full z-20">
+        <Sidebar />
+      </aside>
+
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Mobile Header */}
         <header className="flex items-center justify-between p-4 border-b border-border md:hidden bg-card/50 backdrop-blur-sm z-10">
@@ -61,12 +65,6 @@ export default function Main() {
             >
               <RotateCcw size={18} />
             </button>
-            <button 
-              onClick={() => setIsToolsPanelOpen(true)}
-              className="p-2 rounded-md hover:bg-muted transition-colors"
-            >
-              <Menu size={20} />
-            </button>
           </div>
         </header>
 
@@ -74,36 +72,6 @@ export default function Main() {
           <Assistant />
         </div>
       </div>
-
-      {/* Desktop Tools Panel */}
-      <aside className="hidden md:block w-[350px] lg:w-[400px] border-l border-border bg-card overflow-y-auto">
-        <ToolsPanel />
-      </aside>
-
-      {/* Mobile Tools Panel Overlay */}
-      {isToolsPanelOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm md:hidden">
-          <div className="w-[85%] h-full bg-card shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <Brain size={18} className="text-primary" />
-                  <h3 className="font-semibold">GenTel™</h3>
-                </div>
-                <button 
-                  onClick={() => setIsToolsPanelOpen(false)}
-                  className="p-2 rounded-md hover:bg-muted transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <ToolsPanel />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

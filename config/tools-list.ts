@@ -90,4 +90,18 @@ export const toolsList = [
       },
     },
   },
+  {
+    name: "manage_memory",
+    description: "Save or update important information about the user, their preferences, or recurring entities to persistent memory.",
+    parameters: {
+      key: {
+        type: "string",
+        description: "The name of the memory item (e.g., 'user_location', 'favorite_color', 'project_context')",
+      },
+      value: {
+        type: "string",
+        description: "The information to remember",
+      },
+    },
+  },
 ];

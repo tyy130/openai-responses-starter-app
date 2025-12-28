@@ -9,59 +9,101 @@ interface ToolCallProps {
   toolCall: ToolCallItem;
 }
 
+const TOOL_DISPLAY_NAMES: Record<string, { active: string; completed: string }> = {
+  get_weather: { active: "Checking the weather", completed: "Checked the weather" },
+  get_joke: { active: "Finding a joke", completed: "Found a joke" },
+  github_create_repo: { active: "Creating GitHub repository", completed: "Created GitHub repository" },
+  github_create_file: { active: "Creating file on GitHub", completed: "Created file on GitHub" },
+  github_list_repos: { active: "Listing GitHub repositories", completed: "Listed GitHub repositories" },
+  github_get_file_content: { active: "Reading file from GitHub", completed: "Read file from GitHub" },
+  manage_memory: { active: "Updating persistent memory", completed: "Updated persistent memory" },
+};
+
+const getToolDisplayName = (name: string | null | undefined, status: string) => {
+  if (!name) return status === "completed" ? "Tool call completed" : "Calling tool...";
+  
+  const display = TOOL_DISPLAY_NAMES[name];
+  if (display) {
+    return status === "completed" ? display.completed : display.active;
+  }
+
+  // Fallback: convert snake_case to Title Case
+  const formatted = name
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+    
+  return status === "completed" ? `Finished ${formatted}` : `${formatted}...`;
+};
+
 function ApiCallCell({ toolCall }: ToolCallProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
   return (
     <div className="flex flex-col w-full md:w-[80%] relative mb-[-8px]">
       <div>
         <div className="flex flex-col text-sm rounded-[16px]">
-          <div className="font-semibold p-3 pl-0 text-foreground rounded-b-none flex gap-2">
+          <div className="font-semibold p-3 pl-0 text-foreground rounded-b-none flex items-center gap-2">
             <div className="flex gap-2 items-center text-primary ml-[-8px]">
               <Zap size={16} />
               <div className="text-sm font-medium">
-                {toolCall.status === "completed"
-                  ? `Called ${toolCall.name}`
-                  : `Calling ${toolCall.name}...`}
+                {getToolDisplayName(toolCall.name, toolCall.status)}
               </div>
             </div>
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors font-bold ml-2"
+            >
+              {isOpen ? "[ Hide Process ]" : "[ View Process ]"}
+            </button>
           </div>
 
-          <div className="bg-muted/50 rounded-xl py-2 ml-4 mt-2 border border-border">
-            <div className="max-h-96 overflow-y-scroll text-xs border-b border-border mx-6 p-2">
-              <SyntaxHighlighter
-                customStyle={{
-                  backgroundColor: "transparent",
-                  padding: "8px",
-                  paddingLeft: "0px",
-                  marginTop: 0,
-                  marginBottom: 0,
-                }}
-                language="json"
-                style={coy}
-              >
-                {JSON.stringify(toolCall.parsedArguments, null, 2)}
-              </SyntaxHighlighter>
-            </div>
-            <div className="max-h-96 overflow-y-scroll mx-6 p-2 text-xs">
-              {toolCall.output ? (
+          {isOpen && (
+            <div className="bg-muted/50 rounded-xl py-2 ml-4 mt-2 border border-border animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="max-h-96 overflow-y-scroll text-xs border-b border-border mx-6 p-2">
                 <SyntaxHighlighter
                   customStyle={{
                     backgroundColor: "transparent",
                     padding: "8px",
                     paddingLeft: "0px",
                     marginTop: 0,
+                    marginBottom: 0,
                   }}
                   language="json"
                   style={coy}
                 >
-                  {JSON.stringify(JSON.parse(toolCall.output), null, 2)}
+                  {JSON.stringify(toolCall.parsedArguments, null, 2)}
                 </SyntaxHighlighter>
-              ) : (
-                <div className="text-muted-foreground flex items-center gap-2 py-2">
-                  <Clock size={16} /> Waiting for result...
-                </div>
-              )}
+              </div>
+              <div className="max-h-96 overflow-y-scroll mx-6 p-2 text-xs">
+                {toolCall.output ? (
+                  <SyntaxHighlighter
+                    customStyle={{
+                      backgroundColor: "transparent",
+                      padding: "8px",
+                      paddingLeft: "0px",
+                      marginTop: 0,
+                    }}
+                    language="json"
+                    style={coy}
+                  >
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(toolCall.output!);
+                        return JSON.stringify(parsed, null, 2);
+                      } catch {
+                        return toolCall.output!;
+                      }
+                    })()}
+                  </SyntaxHighlighter>
+                ) : (
+                  <div className="text-muted-foreground flex items-center gap-2 py-2">
+                    <Clock size={16} /> Waiting for result...
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -95,65 +137,73 @@ function WebSearchCell({ toolCall }: ToolCallProps) {
 }
 
 function McpCallCell({ toolCall }: ToolCallProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
   return (
     <div className="flex flex-col w-[70%] relative mb-[-8px]">
       <div>
         <div className="flex flex-col text-sm rounded-[16px]">
-          <div className="font-semibold p-3 pl-0 text-gray-700 rounded-b-none flex gap-2">
+          <div className="font-semibold p-3 pl-0 text-gray-700 rounded-b-none flex items-center gap-2">
             <div className="flex gap-2 items-center text-blue-500 ml-[-8px]">
               <Zap size={16} />
               <div className="text-sm font-medium">
-                {toolCall.status === "completed"
-                  ? `Called ${toolCall.name} via MCP tool`
-                  : `Calling ${toolCall.name} via MCP tool...`}
+                {getToolDisplayName(toolCall.name, toolCall.status)}
               </div>
             </div>
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors font-bold ml-2"
+            >
+              {isOpen ? "[ Hide Process ]" : "[ View Process ]"}
+            </button>
           </div>
 
-          <div className="bg-[#fafafa] rounded-xl py-2 ml-4 mt-2">
-            <div className="max-h-96 overflow-y-scroll text-xs border-b mx-6 p-2">
-              <SyntaxHighlighter
-                customStyle={{
-                  backgroundColor: "#fafafa",
-                  padding: "8px",
-                  paddingLeft: "0px",
-                  marginTop: 0,
-                  marginBottom: 0,
-                }}
-                language="json"
-                style={coy}
-              >
-                {JSON.stringify(toolCall.parsedArguments, null, 2)}
-              </SyntaxHighlighter>
-            </div>
-            <div className="max-h-96 overflow-y-scroll mx-6 p-2 text-xs">
-              {toolCall.output ? (
+          {isOpen && (
+            <div className="bg-[#fafafa] rounded-xl py-2 ml-4 mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="max-h-96 overflow-y-scroll text-xs border-b mx-6 p-2">
                 <SyntaxHighlighter
                   customStyle={{
                     backgroundColor: "#fafafa",
                     padding: "8px",
                     paddingLeft: "0px",
                     marginTop: 0,
+                    marginBottom: 0,
                   }}
                   language="json"
                   style={coy}
                 >
-                  {(() => {
-                    try {
-                      const parsed = JSON.parse(toolCall.output!);
-                      return JSON.stringify(parsed, null, 2);
-                    } catch {
-                      return toolCall.output!;
-                    }
-                  })()}
+                  {JSON.stringify(toolCall.parsedArguments, null, 2)}
                 </SyntaxHighlighter>
-              ) : (
-                <div className="text-zinc-500 flex items-center gap-2 py-2">
-                  <Clock size={16} /> Waiting for result...
-                </div>
-              )}
+              </div>
+              <div className="max-h-96 overflow-y-scroll mx-6 p-2 text-xs">
+                {toolCall.output ? (
+                  <SyntaxHighlighter
+                    customStyle={{
+                      backgroundColor: "#fafafa",
+                      padding: "8px",
+                      paddingLeft: "0px",
+                      marginTop: 0,
+                    }}
+                    language="json"
+                    style={coy}
+                  >
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(toolCall.output!);
+                        return JSON.stringify(parsed, null, 2);
+                      } catch {
+                        return toolCall.output!;
+                      }
+                    })()}
+                  </SyntaxHighlighter>
+                ) : (
+                  <div className="text-muted-foreground flex items-center gap-2 py-2">
+                    <Clock size={16} /> Waiting for result...
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

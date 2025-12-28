@@ -1,16 +1,17 @@
 import { getDeveloperPrompt, MODEL } from "@/config/constants";
 import { getTools } from "@/lib/tools/tools";
 import { getOpenAIClient } from "@/lib/openai";
+import { getMemoryString } from "@/lib/memory";
 
 export async function POST(request: Request) {
   try {
     const { messages, toolsState } = await request.json();
 
     const tools = await getTools(toolsState);
+    const memory = await getMemoryString();
 
     console.log("Tools:", tools);
-
-    console.log("Received messages:", messages);
+    console.log("Memory:", memory);
 
     const openai = getOpenAIClient();
 
@@ -21,10 +22,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const instructions = `${getDeveloperPrompt()}\n\nUSER PERSISTENT MEMORY:\n${memory}`;
+
     const events = await openai.responses.create({
       model: MODEL,
       input: messages,
-      instructions: getDeveloperPrompt(),
+      instructions,
       tools,
       stream: true,
       parallel_tool_calls: false,

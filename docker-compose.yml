@@ -1,0 +1,84 @@
+# ============================================================================
+# TacticDev GenTel™ - Docker Compose Configuration
+# ============================================================================
+# Usage:
+#   Development:  docker compose up --build
+#   Production:   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================================
+
+services:
+  gentel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time variables (baked into the JS bundle)
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-TacticDev GenTel™}
+        NEXT_PUBLIC_SITE_ORIGIN: ${NEXT_PUBLIC_SITE_ORIGIN:-https://gentel.tacticdev.com}
+        NEXT_PUBLIC_CDN_HOST: ${NEXT_PUBLIC_CDN_HOST:-}
+        NEXT_PUBLIC_CDN_BASE_URL: ${NEXT_PUBLIC_CDN_BASE_URL:-}
+    image: tacticdev/gentel:latest
+    container_name: gentel-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime environment variables (server-side only)
+      - NODE_ENV=production
+      
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      - RESPONSES_MODEL=${RESPONSES_MODEL:-gpt-4o}
+      - RESPONSES_DEVELOPER_PROMPT=${RESPONSES_DEVELOPER_PROMPT:-}
+      
+      # Vector Store (optional)
+      - DEFAULT_VECTOR_STORE_ID=${DEFAULT_VECTOR_STORE_ID:-}
+      - DEFAULT_VECTOR_STORE_NAME=${DEFAULT_VECTOR_STORE_NAME:-}
+      
+      # GitHub OAuth
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-https://gentel.tacticdev.com/api/oauth/github/callback}
+      
+      # Google OAuth
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://gentel.tacticdev.com/api/oauth/google/callback}
+      
+      # Security
+      - OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:?OAUTH_STATE_SECRET is required (32+ chars)}
+      - OAUTH_RETURN_ALLOWLIST=${OAUTH_RETURN_ALLOWLIST:-https://gentel.tacticdev.com}
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ADMIN_AUTH_TOKEN=${ADMIN_AUTH_TOKEN:-}
+      
+      # CDN (optional, runtime)
+      - CDN_BASE_URL=${CDN_BASE_URL:-}
+      - CDN_SECRET_KEY=${CDN_SECRET_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Uncomment to persist logs
+    # volumes:
+    #   - ./logs:/app/logs
+    networks:
+      - gentel-network
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: gentel-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --protocol http2
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - gentel
+    networks:
+      - gentel-network
+
+networks:
+  gentel-network:
+    driver: bridge

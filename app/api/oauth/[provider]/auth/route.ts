@@ -15,6 +15,7 @@ export async function GET(
 ) {
   const { provider } = await params;
   const host = (await nextHeaders()).get("host") || undefined;
+  const protocol = host?.includes("localhost") ? "http" : "https";
   
   try {
     const cfg = getProviderConfig(provider, host);
@@ -27,7 +28,7 @@ export async function GET(
     const jar = await cookies();
 
     const searchParams = request.nextUrl.searchParams;
-    const return_to = searchParams.get("return_to") || `https://${host}/`;
+    const return_to = searchParams.get("return_to") || `${protocol}://${host}/`;
 
     // Security: Validate return_to (basic check, can be expanded)
     if (host && !return_to.includes(host) && !process.env.OAUTH_RETURN_ALLOWLIST?.includes(return_to)) {

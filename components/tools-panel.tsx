@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import FileSearchSetup from "./file-search-setup";
 import WebSearchConfig from "./websearch-config";
 import FunctionsView from "./functions-view";
+import MemoryView from "./memory-view";
 import McpConfig from "./mcp-config";
 import PanelConfig from "./panel-config";
 import useToolsStore from "@/stores/useToolsStore";
@@ -48,31 +49,11 @@ export default function ContextPanel() {
       .catch(() => setGithubOauthConfigured(false));
   }, []);
   return (
-    <div className="h-full flex flex-col bg-card/50 backdrop-blur-md">
-      <div className="p-6 border-b border-border hidden md:block bg-card">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
-            <Brain size={22} className="text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-bold text-xl tracking-tight text-foreground">TacticDev</h1>
-            <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] -mt-1">GenTel™</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tools & Integrations</h2>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => resetConversation()}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all border border-transparent hover:border-border"
-              title="Reset Conversation"
-            >
-              <RotateCcw size={16} />
-            </button>
-          </div>
-        </div>
+    <div className="h-full flex flex-col bg-background">
+      <div className="p-6 border-b border-border bg-muted/10">
+        <MemoryView />
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
         <PanelConfig
           title="Core Knowledge Base"
           tooltip="Connect or upload your internal knowledge base (vector store) so the assistant can reference internal docs."

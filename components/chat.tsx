@@ -100,85 +100,66 @@ const Chat: React.FC<ChatProps> = ({
             <div ref={itemsEndRef} />
           </div>
         </div>
-        <div className="p-4 md:px-10 pb-6">
-          <div className="flex items-center">
-            <div className="flex w-full items-center">
-              <div className="flex w-full flex-col gap-1.5 rounded-[26px] p-2.5 pl-2 transition-all bg-card border border-border shadow-xl focus-within:border-primary/40 focus-within:ring-4 focus-within:ring-primary/5">
-                {selectedFile && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-xl mb-1 mx-2 w-fit animate-in fade-in slide-in-from-bottom-2 border border-primary/20">
-                    <Paperclip size={14} className="text-primary" />
-                    <div className="text-xs font-medium truncate max-w-[200px] text-foreground">{selectedFile.name}</div>
-                    <button 
-                      onClick={() => setSelectedFile(null)} 
-                      className="text-muted-foreground hover:text-foreground p-0.5 rounded-full hover:bg-primary/10 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                )}
-                <div className="flex items-end gap-1.5 md:gap-2 pl-1">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-primary transition-all mb-0.5 shrink-0"
-                    title="Upload file"
-                  >
-                    <Paperclip size={20} />
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <textarea
-                      id="prompt-textarea"
-                      tabIndex={0}
-                      dir="auto"
-                      rows={1}
-                      placeholder="Message TacticDev GenTel™..."
-                      className="min-h-[44px] max-h-[200px] resize-none border-0 focus:outline-none text-sm bg-transparent px-0 py-3 text-foreground placeholder:text-muted-foreground/70"
-                      value={inputMessageText}
-                      onChange={(e) => {
-                        setinputMessageText(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                      onKeyDown={handleKeyDown}
-                      onCompositionStart={() => setIsComposing(true)}
-                      onCompositionEnd={() => setIsComposing(false)}
-                    />
-                  </div>
-                  <button
-                    disabled={!inputMessageText && !selectedFile}
-                    data-testid="send-button"
-                    className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground disabled:hover:opacity-100 mb-0.5 mr-0.5 shrink-0 shadow-lg shadow-primary/20"
-                  onClick={() => {
-                      onSendMessage(inputMessageText, selectedFile || undefined);
-                      setinputMessageText("");
-                      setSelectedFile(null);
-                      const textarea = document.getElementById('prompt-textarea');
-                      if (textarea) textarea.style.height = 'auto';
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      viewBox="0 0 32 32"
-                    >
-                      <path
-                        fill="currentColor"
-                        fillRule="evenodd"
-                        d="M15.192 8.906a1.143 1.143 0 0 1 1.616 0l5.143 5.143a1.143 1.143 0 0 1-1.616 1.616l-3.192-3.192v9.813a1.143 1.143 0 0 1-2.286 0v-9.813l-3.192 3.192a1.143 1.143 0 1 1-1.616-1.616z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
+        <div className="p-4 md:p-6">
+          <div className="relative max-w-3xl mx-auto">
+            {selectedFile && (
+              <div className="absolute -top-12 left-0 flex items-center gap-2 bg-muted px-3 py-1.5 rounded-lg border border-border animate-in slide-in-from-bottom-2">
+                <Paperclip size={14} className="text-primary" />
+                <span className="text-xs font-medium truncate max-w-[150px]">{selectedFile.name}</span>
+                <button 
+                  onClick={() => setSelectedFile(null)}
+                  className="hover:text-destructive transition-colors"
+                >
+                  <X size={14} />
+                </button>
               </div>
+            )}
+            
+            <div className="relative flex items-end gap-2 bg-card border border-border rounded-2xl p-2 shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl hover:bg-muted text-muted-foreground transition-colors"
+                title="Attach file"
+              >
+                <Paperclip size={20} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              
+              <textarea
+                value={inputMessageText}
+                onChange={(e) => {
+                  setinputMessageText(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={() => setIsComposing(false)}
+                placeholder="Message GenTel..."
+                className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2.5 px-1 text-sm min-h-[44px] max-h-[200px]"
+                rows={1}
+              />
+              
+              <button
+                onClick={() => {
+                  onSendMessage(inputMessageText, selectedFile || undefined);
+                  setinputMessageText("");
+                  setSelectedFile(null);
+                }}
+                disabled={!inputMessageText.trim() && !selectedFile}
+                className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-30 disabled:grayscale transition-all hover:opacity-90"
+              >
+                <Brain size={20} />
+              </button>
             </div>
+            <p className="text-[10px] text-center text-muted-foreground mt-3">
+              GenTel™ can make mistakes. Check important info.
+            </p>
           </div>
         </div>
       </div>
