@@ -319,6 +319,11 @@ export const processMessages = async () => {
           }
           conversationItems.push(item);
           setConversationItems([...conversationItems]);
+
+          // Save session progress
+          const { saveCurrentSession } = useConversationStore.getState();
+          await saveCurrentSession();
+
           if (
             toolCallMessage &&
             toolCallMessage.type === "tool_call" &&
@@ -340,6 +345,10 @@ export const processMessages = async () => {
               output: JSON.stringify(toolResult),
             });
             setConversationItems([...conversationItems]);
+
+            // Save session progress
+            const { saveCurrentSession } = useConversationStore.getState();
+            await saveCurrentSession();
 
             // Create another turn after tool output has been added
             await processMessages();

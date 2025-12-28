@@ -32,7 +32,11 @@ export default function FunctionsView() {
       {toolsList.map((tool) => (
         <div key={tool.name} className="flex items-start gap-2">
           <div className="bg-primary/10 text-primary rounded-md p-1">
-            <Code size={16} />
+            {tool.name === "get_weather" ? (
+              <i className="fa-solid fa-cloud-sun text-[14px] w-4 h-4 flex items-center justify-center"></i>
+            ) : (
+              <Code size={16} />
+            )}
           </div>
           <div className="text-foreground font-mono text-sm mt-0.5">
             {tool.name}(

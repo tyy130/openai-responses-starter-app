@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const { key, value } = await request.json();
     const result = await updateMemory(key, value);
     return NextResponse.json(result);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

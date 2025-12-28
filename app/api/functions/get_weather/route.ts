@@ -47,7 +47,8 @@ export async function GET(request: Request) {
       temperature: weather.current_weather.temperature,
       windspeed: weather.current_weather.windspeed,
       condition: weather.current_weather.weathercode, // You could map this to text if you want
-      location: geoData[0].display_name
+      location: geoData[0].display_name,
+      unit: unit ?? "celsius"
     }), {
       status: 200,
     });

@@ -1,0 +1,36 @@
+name: Rescue Agent (Health Check)
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Rescue Agent
+      run: npx tsx scripts/rescue-agent.ts
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        OAUTH_STATE_SECRET: ${{ secrets.OAUTH_STATE_SECRET }}
+        RESPONSES_MODEL: "gpt-4o"
+
+    - name: Notify on Failure
+      if: failure()
+      run: |
+        echo "🚨 GenTel™ Rescue Agent detected a failure in the production environment!"
+        # You could add a curl command here to notify Slack/Discord/etc.

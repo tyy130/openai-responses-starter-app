@@ -6,8 +6,13 @@ import useToolsStore from "@/stores/useToolsStore";
 import { Item, processMessages } from "@/lib/assistant";
 
 export default function Assistant() {
-  const { chatMessages, addConversationItem, addChatMessage, setAssistantLoading } =
-    useConversationStore();
+  const { 
+    chatMessages, 
+    addConversationItem, 
+    addChatMessage, 
+    setAssistantLoading,
+    saveCurrentSession 
+  } = useConversationStore();
   const { vectorStore, setVectorStore, setFileSearchEnabled } = useToolsStore();
 
   const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
@@ -88,7 +93,14 @@ export default function Assistant() {
 
       addConversationItem(userMessage);
       addChatMessage(userItem);
+      
+      // Save session (creates new if needed)
+      await saveCurrentSession();
+      
       await processMessages();
+      
+      // Save again after assistant response
+      await saveCurrentSession();
     } catch (error) {
       console.error("Error processing message:", error);
     } finally {

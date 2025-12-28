@@ -1,7 +1,7 @@
 import { getOpenAIClient } from "@/lib/openai";
 
 export async function POST(request: Request) {
-  const { vectorStoreId, fileId } = await request.json();
+  const { vectorStoreId, fileId, fileIds } = await request.json();
   const openai = getOpenAIClient();
 
   if (!openai) {
@@ -12,15 +12,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    const vectorStore = await openai.vectorStores.files.create(
-      vectorStoreId,
-      {
-        file_id: fileId,
-      }
-    );
-    return new Response(JSON.stringify(vectorStore), { status: 200 });
+    if (fileIds && Array.isArray(fileIds)) {
+      const fileBatch = await openai.vectorStores.fileBatches.create(
+        vectorStoreId,
+        {
+          file_ids: fileIds,
+        }
+      );
+      return new Response(JSON.stringify(fileBatch), { status: 200 });
+    } else {
+      const vectorStoreFile = await openai.vectorStores.files.create(
+        vectorStoreId,
+        {
+          file_id: fileId,
+        }
+      );
+      return new Response(JSON.stringify(vectorStoreFile), { status: 200 });
+    }
   } catch (error) {
-    console.error("Error adding file:", error);
-    return new Response("Error adding file", { status: 500 });
+    console.error("Error adding file(s):", error);
+    return new Response("Error adding file(s)", { status: 500 });
   }
 }

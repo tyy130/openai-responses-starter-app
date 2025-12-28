@@ -1,6 +1,5 @@
 import { db } from "./db";
 import { memories } from "./db/schema";
-import { eq } from "drizzle-orm";
 
 export async function getMemoryString(): Promise<string> {
   try {

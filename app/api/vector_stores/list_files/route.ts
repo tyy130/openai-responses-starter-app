@@ -13,10 +13,30 @@ export async function GET(request: Request) {
   }
 
   try {
-    const vectorStore = await openai.vectorStores.files.list(
+    const vectorStoreFiles = await openai.vectorStores.files.list(
       vectorStoreId || ""
     );
-    return new Response(JSON.stringify(vectorStore), { status: 200 });
+
+    // Fetch details for each file to get the filename
+    const filesWithDetails = await Promise.all(
+      vectorStoreFiles.data.map(async (vsFile) => {
+        try {
+          const fileDetails = await openai.files.retrieve(vsFile.id);
+          return {
+            ...vsFile,
+            filename: fileDetails.filename,
+            size: fileDetails.bytes,
+          };
+        } catch {
+          return {
+            ...vsFile,
+            filename: "Unknown File",
+          };
+        }
+      })
+    );
+
+    return new Response(JSON.stringify({ data: filesWithDetails }), { status: 200 });
   } catch (error) {
     console.error("Error fetching files:", error);
     return new Response("Error fetching files", { status: 500 });

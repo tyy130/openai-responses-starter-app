@@ -4,20 +4,15 @@ import dynamic from "next/dynamic";
 import FileSearchSetup from "./file-search-setup";
 import WebSearchConfig from "./websearch-config";
 import FunctionsView from "./functions-view";
-import MemoryView from "./memory-view";
 import McpConfig from "./mcp-config";
 import PanelConfig from "./panel-config";
 import useToolsStore from "@/stores/useToolsStore";
-
-import { RotateCcw, Brain } from "lucide-react";
-import useConversationStore from "@/stores/useConversationStore";
 
 const GoogleIntegrationPanel = dynamic(() => import("@/components/google-integration"), { ssr: false });
 const GithubIntegrationPanel = dynamic(() => import("@/components/github-integration"), { ssr: false });
 const AdminCdnPanel = dynamic(() => import("./admin-cdn"), { ssr: false });
 
 export default function ContextPanel() {
-  const { resetConversation } = useConversationStore();
   const {
     fileSearchEnabled,
     setFileSearchEnabled,

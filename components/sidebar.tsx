@@ -6,7 +6,10 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  Brain
+  Brain,
+  MoreVertical,
+  Edit2,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useConversationStore from "@/stores/useConversationStore";
@@ -18,21 +21,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "./ui/input";
 import ToolsPanel from "./tools-panel";
-import { MessageItem } from "@/lib/assistant";
 
-export default function Sidebar() {
+export default function Sidebar({ hideToggle = false }: { hideToggle?: boolean }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
-  const { resetConversation, chatMessages } = useConversationStore();
+  const { 
+    resetConversation, 
+    sessions, 
+    currentSessionId, 
+    loadSessions, 
+    switchSession,
+    deleteSession,
+    renameSession
+  } = useConversationStore();
 
-  // Get the first user message to show in history
-  const firstUserMessage = chatMessages.find(
-    (m): m is MessageItem => m.type === "message" && m.role === "user"
-  );
-  const messageText = firstUserMessage?.content?.[0]?.text as string | undefined;
-  const historyLabel = messageText 
-    ? messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") 
-    : "New Conversation";
+  React.useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   return (
     <div 
@@ -42,12 +53,14 @@ export default function Sidebar() {
       )}
     >
       {/* Toggle Button */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center z-50 hover:bg-muted transition-colors shadow-sm"
-      >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+      {!hideToggle && (
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center z-50 hover:bg-muted transition-colors shadow-sm"
+        >
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+      )}
 
       {/* Header / New Chat */}
       <div className="p-3 flex flex-col gap-2">
@@ -83,19 +96,25 @@ export default function Sidebar() {
               Conversations
             </h3>
           )}
-          {chatMessages.length > 0 && (
+          
+          {sessions.map((session) => (
             <SidebarItem 
+              key={session.id}
               icon={<MessageSquare size={18} />} 
-              label={historyLabel} 
-              active
-              collapsed={isCollapsed} 
+              label={session.title} 
+              active={currentSessionId === session.id}
+              collapsed={isCollapsed}
+              onClick={() => switchSession(session.id)}
+              onDelete={() => deleteSession(session.id)}
+              onRename={(newTitle) => renameSession(session.id, newTitle)}
             />
+          ))}
+
+          {sessions.length === 0 && !isCollapsed && (
+            <div className="px-2 py-4 text-center">
+              <p className="text-xs text-muted-foreground">No conversations yet.</p>
+            </div>
           )}
-          <SidebarItem 
-            icon={<MessageSquare size={18} />} 
-            label="Previous Session" 
-            collapsed={isCollapsed} 
-          />
         </div>
       </div>
 
@@ -137,33 +156,115 @@ function SidebarItem({
   icon, 
   label, 
   active = false, 
-  collapsed = false 
+  collapsed = false,
+  onClick,
+  onDelete,
+  onRename
 }: { 
   icon: React.ReactNode; 
   label: string; 
   active?: boolean;
   collapsed?: boolean;
+  onClick?: () => void;
+  onDelete?: () => void;
+  onRename?: (newTitle: string) => void;
 }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState(label);
+
+  const handleRename = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editValue.trim() && editValue !== label) {
+      onRename?.(editValue);
+    }
+    setIsEditing(false);
+  };
+
   return (
-    <button
-      className={cn(
-        "flex items-center gap-3 w-full px-2 py-2 rounded-lg transition-all group",
-        active 
-          ? "bg-primary/10 text-primary font-medium" 
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        collapsed ? "justify-center" : ""
+    <div className="group relative">
+      <button
+        onClick={onClick}
+        className={cn(
+          "flex items-center gap-3 w-full px-2 py-2 rounded-lg transition-all",
+          active 
+            ? "bg-primary/10 text-primary font-medium" 
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          collapsed ? "justify-center" : ""
+        )}
+        title={collapsed ? label : undefined}
+      >
+        <div className={cn(
+          "shrink-0 transition-transform duration-200 group-hover:scale-110",
+          active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+        )}>
+          {icon}
+        </div>
+        {!collapsed && (
+          <div className="flex-1 text-left truncate">
+            {isEditing ? (
+              <form onSubmit={handleRename} className="flex items-center gap-1">
+                <Input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={() => setIsEditing(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setIsEditing(false);
+                      setEditValue(label);
+                    }
+                  }}
+                  className="h-6 py-0 px-1 text-sm bg-background border-primary"
+                />
+              </form>
+            ) : (
+              <span className="text-sm">{label}</span>
+            )}
+          </div>
+        )}
+      </button>
+
+      {!collapsed && !isEditing && (
+        <div 
+          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/50">
+                <MoreVertical size={14} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-32 p-1" align="end">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start gap-2 text-xs h-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                  setEditValue(label);
+                }}
+              >
+                <Edit2 size={12} />
+                Rename
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start gap-2 text-xs h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.();
+                }}
+              >
+                <Trash2 size={12} />
+                Delete
+              </Button>
+            </PopoverContent>
+          </Popover>
+        </div>
       )}
-      title={collapsed ? label : undefined}
-    >
-      <div className={cn(
-        "shrink-0 transition-transform duration-200 group-hover:scale-110",
-        active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-      )}>
-        {icon}
-      </div>
-      {!collapsed && (
-        <span className="truncate text-sm">{label}</span>
-      )}
-    </button>
+    </div>
   );
 }

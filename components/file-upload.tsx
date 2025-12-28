@@ -31,7 +31,7 @@ export default function FileUpload({
   onAddStore,
   onUnlinkStore,
 }: FileUploadProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [newStoreName, setNewStoreName] = useState<string>("Default store");
   const [uploading, setUploading] = useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
@@ -66,18 +66,25 @@ export default function FileUpload({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0]);
+      setFiles((prev) => {
+        const newFiles = [...prev, ...acceptedFiles];
+        if (newFiles.length > 10) {
+          alert("You can only upload up to 10 files at a time.");
+          return newFiles.slice(0, 10);
+        }
+        return newFiles;
+      });
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     accept: acceptedFileTypes,
   });
 
-  const removeFile = () => {
-    setFile(null);
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
@@ -91,41 +98,16 @@ export default function FileUpload({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!file) {
-      alert("Please select a file to upload.");
+    if (files.length === 0) {
+      alert("Please select at least one file to upload.");
       return;
     }
     setUploading(true);
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const base64Content = arrayBufferToBase64(arrayBuffer);
-      const fileObject = {
-        name: file.name,
-        content: base64Content,
-      };
-
-      // 1. Upload file
-      const uploadResponse = await fetch("/api/vector_stores/upload_file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileObject,
-        }),
-      });
-      if (!uploadResponse.ok) {
-        throw new Error("Error uploading file");
-      }
-      const uploadData = await uploadResponse.json();
-      const fileId = uploadData.id;
-      if (!fileId) {
-        throw new Error("Error getting file ID");
-      }
-      console.log("Uploaded file:", uploadData);
-
       let finalVectorStoreId = vectorStoreId;
 
-      // 2. If no vector store is linked, create one
+      // 1. If no vector store is linked, create one first
       if (!vectorStoreId || vectorStoreId === "") {
         const createResponse = await fetch("/api/vector_stores/create_store", {
           method: "POST",
@@ -139,33 +121,62 @@ export default function FileUpload({
         }
         const createData = await createResponse.json();
         finalVectorStoreId = createData.id;
+        if (finalVectorStoreId) {
+          onAddStore(finalVectorStoreId);
+        }
       }
 
       if (!finalVectorStoreId) {
         throw new Error("Error getting vector store ID");
       }
 
-      onAddStore(finalVectorStoreId);
+      // 2. Upload all files first
+      const fileIds: string[] = [];
+      for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const base64Content = arrayBufferToBase64(arrayBuffer);
+        const fileObject = {
+          name: file.name,
+          content: base64Content,
+        };
 
-      // 3. Add file to vector store
-      const addFileResponse = await fetch("/api/vector_stores/add_file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileId,
-          vectorStoreId: finalVectorStoreId,
-        }),
-      });
-      if (!addFileResponse.ok) {
-        throw new Error("Error adding file to vector store");
+        // Upload file
+        const uploadResponse = await fetch("/api/vector_stores/upload_file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileObject,
+          }),
+        });
+        if (!uploadResponse.ok) {
+          throw new Error(`Error uploading file: ${file.name}`);
+        }
+        const uploadData = await uploadResponse.json();
+        if (uploadData.id) {
+          fileIds.push(uploadData.id);
+        }
       }
-      const addFileData = await addFileResponse.json();
-      console.log("Added file to vector store:", addFileData);
-      setFile(null);
+
+      // 3. Add all files to vector store in one batch
+      if (fileIds.length > 0) {
+        const addFilesResponse = await fetch("/api/vector_stores/add_file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileIds,
+            vectorStoreId: finalVectorStoreId,
+          }),
+        });
+        if (!addFilesResponse.ok) {
+          throw new Error(`Error adding files to vector store`);
+        }
+      }
+
+      setFiles([]);
       setDialogOpen(false);
     } catch (error) {
       console.error("Error during file upload process:", error);
-      alert("There was an error processing your file. Please try again.");
+      alert("There was an error processing your files. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -228,25 +239,38 @@ export default function FileUpload({
               </div>
             )}
           </div>
-          <div className="flex justify-center items-center mb-4 h-[200px]">
-            {file ? (
-              <div className="flex flex-col items-start">
-                <div className="text-muted-foreground">Loaded file</div>
-                <div className="flex items-center mt-2">
-                  <div className="text-foreground mr-2">{file.name}</div>
-
-                  <Trash2
-                    onClick={removeFile}
-                    size={16}
-                    className="cursor-pointer text-foreground hover:text-destructive transition-colors"
-                  />
+          <div className="flex flex-col mb-4 min-h-[200px]">
+            {files.length > 0 ? (
+              <div className="flex flex-col items-start w-full">
+                <div className="text-muted-foreground mb-2">Loaded files ({files.length})</div>
+                <div className="flex flex-col gap-2 w-full max-h-[150px] overflow-y-auto pr-2">
+                  {files.map((f, index) => (
+                    <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md w-full">
+                      <div className="text-foreground text-sm truncate flex-1 mr-2">{f.name}</div>
+                      <Trash2
+                        onClick={() => removeFile(index)}
+                        size={16}
+                        className="cursor-pointer text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div
+                  {...getRootProps()}
+                  className="mt-4 w-full p-4 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-all"
+                >
+                  <input {...getInputProps()} />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Plus size={16} />
+                    Add more files
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center justify-center w-full h-full">
                 <div
                   {...getRootProps()}
-                  className="p-6 flex items-center justify-center relative focus-visible:outline-0"
+                  className="p-6 flex items-center justify-center relative focus-visible:outline-0 w-full h-full"
                 >
                   <input {...getInputProps()} />
                   <div
@@ -258,7 +282,8 @@ export default function FileUpload({
                   ></div>
                   <div className="flex flex-col items-center text-center z-10 cursor-pointer">
                     <FilePlus2 className="mb-4 size-8 text-muted-foreground" />
-                    <div className="text-muted-foreground">Upload a file</div>
+                    <div className="text-muted-foreground">Upload files</div>
+                    <div className="text-xs text-muted-foreground mt-1">Drag & drop or click to select</div>
                   </div>
                 </div>
               </div>

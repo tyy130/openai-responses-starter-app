@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const allMemories = await db.select().from(memories);
     return NextResponse.json(allMemories);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch memory" }, { status: 500 });
   }
 }

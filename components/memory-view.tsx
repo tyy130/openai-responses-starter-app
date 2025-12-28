@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Brain, RefreshCw, Trash2 } from "lucide-react";
+import { Brain, RefreshCw } from "lucide-react";
 import { Switch } from "./ui/switch";
 
 export default function MemoryView() {

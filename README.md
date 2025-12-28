@@ -31,7 +31,15 @@ This application is designed for deployment in secure environments (e.g., Hostin
 - \`GOOGLE_CLIENT_ID\` / \`GOOGLE_CLIENT_SECRET\`: Google Workspace integration credentials.
 
 For detailed deployment instructions, refer to the internal \`DEPLOY_HOSTINGER.md\` or contact the platform engineering team.
+## Automated Agents (.github)
 
+GenTel™ includes a suite of automated GitHub Agents to ensure system reliability and maintenance:
+
+- **CI Agent**: Validates every push and pull request to ensure the codebase remains stable and buildable.
+- **Rescue Agent**: A scheduled health check (every 6 hours) that monitors database connectivity, OpenAI API status, and environment health.
+- **Auto-Maintenance Agent**: A weekly maintenance routine that synchronizes database schemas, audits security dependencies, and verifies production builds.
+
+These agents are located in `.github/workflows/` and powered by specialized scripts in `scripts/`.
 ---
 
 *Proprietary and Confidential. For internal use by TacticDev personnel only.*

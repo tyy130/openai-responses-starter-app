@@ -4,19 +4,45 @@ import { ToolCallItem } from "@/lib/assistant";
 import { BookOpenText, Clock, Globe, Zap, Code2, Download } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coy } from "react-syntax-highlighter/dist/esm/styles/prism";
+import WeatherView from "./weather-view";
 
 interface ToolCallProps {
   toolCall: ToolCallItem;
 }
 
 const TOOL_DISPLAY_NAMES: Record<string, { active: string; completed: string }> = {
+  // Utility
   get_weather: { active: "Checking the weather", completed: "Checked the weather" },
   get_joke: { active: "Finding a joke", completed: "Found a joke" },
-  github_create_repo: { active: "Creating GitHub repository", completed: "Created GitHub repository" },
-  github_create_file: { active: "Creating file on GitHub", completed: "Created file on GitHub" },
-  github_list_repos: { active: "Listing GitHub repositories", completed: "Listed GitHub repositories" },
-  github_get_file_content: { active: "Reading file from GitHub", completed: "Read file from GitHub" },
+  
+  // Web & Knowledge
+  web_fetch: { active: "Fetching webpage content", completed: "Fetched webpage content" },
+  rss_subscribe: { active: "Subscribing to RSS feed", completed: "Subscribed to RSS feed" },
+  rss_poll: { active: "Checking RSS feed for updates", completed: "Checked RSS feed" },
+  
+  // Persistence (KV Store)
+  kv_get: { active: "Retrieving from memory", completed: "Retrieved from memory" },
+  kv_set: { active: "Saving to memory", completed: "Saved to memory" },
+  kv_list: { active: "Listing memory keys", completed: "Listed memory keys" },
+  kv_delete: { active: "Deleting from memory", completed: "Deleted from memory" },
   manage_memory: { active: "Updating persistent memory", completed: "Updated persistent memory" },
+  
+  // Calendar / Tasks
+  calendar_list_events: { active: "Checking your calendar", completed: "Checked your calendar" },
+  tasks_create: { active: "Creating a task", completed: "Created a task" },
+  
+  // Files
+  files_upload: { active: "Uploading file", completed: "Uploaded file" },
+  files_list: { active: "Listing files", completed: "Listed files" },
+  files_download: { active: "Downloading file", completed: "Downloaded file" },
+  
+  // GitHub
+  github_list_repos: { active: "Listing GitHub repositories", completed: "Listed GitHub repositories" },
+  github_create_repo: { active: "Creating GitHub repository", completed: "Created GitHub repository" },
+  github_get_file_content: { active: "Reading file from GitHub", completed: "Read file from GitHub" },
+  github_create_file: { active: "Creating file on GitHub", completed: "Created file on GitHub" },
+  github_create_issue: { active: "Creating GitHub issue", completed: "Created GitHub issue" },
+  github_open_pr: { active: "Opening pull request", completed: "Opened pull request" },
 };
 
 const getToolDisplayName = (name: string | null | undefined, status: string) => {
@@ -77,25 +103,40 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
               </div>
               <div className="max-h-96 overflow-y-scroll mx-6 p-2 text-xs">
                 {toolCall.output ? (
-                  <SyntaxHighlighter
-                    customStyle={{
-                      backgroundColor: "transparent",
-                      padding: "8px",
-                      paddingLeft: "0px",
-                      marginTop: 0,
-                    }}
-                    language="json"
-                    style={coy}
-                  >
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(toolCall.output!);
-                        return JSON.stringify(parsed, null, 2);
-                      } catch {
-                        return toolCall.output!;
-                      }
-                    })()}
-                  </SyntaxHighlighter>
+                  <>
+                    {toolCall.name === "get_weather" ? (
+                      <div className="py-2">
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(toolCall.output!);
+                            return <WeatherView data={parsed} />;
+                          } catch {
+                            return <span className="text-destructive">Error parsing weather data</span>;
+                          }
+                        })()}
+                      </div>
+                    ) : (
+                      <SyntaxHighlighter
+                        customStyle={{
+                          backgroundColor: "transparent",
+                          padding: "8px",
+                          paddingLeft: "0px",
+                          marginTop: 0,
+                        }}
+                        language="json"
+                        style={coy}
+                      >
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(toolCall.output!);
+                            return JSON.stringify(parsed, null, 2);
+                          } catch {
+                            return toolCall.output!;
+                          }
+                        })()}
+                      </SyntaxHighlighter>
+                    )}
+                  </>
                 ) : (
                   <div className="text-muted-foreground flex items-center gap-2 py-2">
                     <Clock size={16} /> Waiting for result...
