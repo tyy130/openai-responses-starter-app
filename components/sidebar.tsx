@@ -3,14 +3,10 @@ import React from "react";
 import { 
   Plus, 
   MessageSquare, 
-  FolderOpen, 
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  Brain,
-  History,
-  LayoutDashboard,
-  Zap
+  Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useConversationStore from "@/stores/useConversationStore";
@@ -23,14 +19,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import ToolsPanel from "./tools-panel";
+import { MessageItem } from "@/lib/assistant";
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const { resetConversation, chatMessages } = useConversationStore();
 
   // Get the first user message to show in history
-  const firstUserMessage = chatMessages.find(m => m.type === "message" && m.role === "user");
-  const historyLabel = firstUserMessage?.content[0]?.text?.slice(0, 30) + (firstUserMessage?.content[0]?.text?.length > 30 ? "..." : "") || "New Conversation";
+  const firstUserMessage = chatMessages.find(
+    (m): m is MessageItem => m.type === "message" && m.role === "user"
+  );
+  const messageText = firstUserMessage?.content?.[0]?.text as string | undefined;
+  const historyLabel = messageText 
+    ? messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") 
+    : "New Conversation";
 
   return (
     <div 
@@ -74,66 +76,24 @@ export default function Sidebar() {
 
       {/* Navigation / History */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
-        {/* Memory Section */}
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <h3 className="px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-              Persistent Memory
-            </h3>
-          )}
-          <div className={cn("px-2", isCollapsed ? "hidden" : "block")}>
-            <MemoryView />
-          </div>
-          {isCollapsed && (
-            <SidebarItem 
-              icon={<Brain size={18} />} 
-              label="Memory" 
-              collapsed={isCollapsed} 
-            />
-          )}
-        </div>
-
-        {/* Projects Section */}
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <h3 className="px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-              Active Projects
-            </h3>
-          )}
-          <SidebarItem 
-            icon={<LayoutDashboard size={18} />} 
-            label="Main Workspace" 
-            active 
-            collapsed={isCollapsed} 
-          />
-          <SidebarItem 
-            icon={<FolderOpen size={18} />} 
-            label="Knowledge Base" 
-            collapsed={isCollapsed} 
-          />
-        </div>
-
         {/* History Section */}
         <div className="space-y-1">
           {!isCollapsed && (
             <h3 className="px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
-              Recent History
+              Conversations
             </h3>
+          )}
+          {chatMessages.length > 0 && (
+            <SidebarItem 
+              icon={<MessageSquare size={18} />} 
+              label={historyLabel} 
+              active
+              collapsed={isCollapsed} 
+            />
           )}
           <SidebarItem 
             icon={<MessageSquare size={18} />} 
-            label={historyLabel} 
-            active={chatMessages.length > 0}
-            collapsed={isCollapsed} 
-          />
-          <SidebarItem 
-            icon={<MessageSquare size={18} />} 
-            label="Previous Conversation" 
-            collapsed={isCollapsed} 
-          />
-          <SidebarItem 
-            icon={<MessageSquare size={18} />} 
-            label="Project Discussion" 
+            label="Previous Session" 
             collapsed={isCollapsed} 
           />
         </div>
