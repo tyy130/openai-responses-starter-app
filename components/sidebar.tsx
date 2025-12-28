@@ -42,7 +42,7 @@ export default function Sidebar() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center z-50 hover:bg-muted transition-colors"
+        className="absolute -right-3 top-10 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center z-50 hover:bg-muted transition-colors shadow-sm"
       >
         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
@@ -74,6 +74,25 @@ export default function Sidebar() {
 
       {/* Navigation / History */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
+        {/* Memory Section */}
+        <div className="space-y-1">
+          {!isCollapsed && (
+            <h3 className="px-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
+              Persistent Memory
+            </h3>
+          )}
+          <div className={cn("px-2", isCollapsed ? "hidden" : "block")}>
+            <MemoryView />
+          </div>
+          {isCollapsed && (
+            <SidebarItem 
+              icon={<Brain size={18} />} 
+              label="Memory" 
+              collapsed={isCollapsed} 
+            />
+          )}
+        </div>
+
         {/* Projects Section */}
         <div className="space-y-1">
           {!isCollapsed && (
@@ -107,6 +126,16 @@ export default function Sidebar() {
             active={chatMessages.length > 0}
             collapsed={isCollapsed} 
           />
+          <SidebarItem 
+            icon={<MessageSquare size={18} />} 
+            label="Previous Conversation" 
+            collapsed={isCollapsed} 
+          />
+          <SidebarItem 
+            icon={<MessageSquare size={18} />} 
+            label="Project Discussion" 
+            collapsed={isCollapsed} 
+          />
         </div>
       </div>
 
@@ -121,16 +150,16 @@ export default function Sidebar() {
                 isCollapsed ? "px-0 justify-center" : ""
               )}
             >
-              <Zap size={18} />
-              {!isCollapsed && <span>Tools & Config</span>}
+              <Settings size={18} />
+              {!isCollapsed && <span>Settings & Tools</span>}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-none bg-transparent">
             <div className="bg-card rounded-xl overflow-hidden border border-border shadow-2xl">
               <DialogHeader className="p-6 border-b border-border bg-muted/30">
                 <DialogTitle className="flex items-center gap-2">
-                  <Zap size={20} className="text-primary" />
-                  Autonomous Capabilities
+                  <Settings size={20} className="text-primary" />
+                  Settings & Autonomous Capabilities
                 </DialogTitle>
               </DialogHeader>
               <div className="p-0">
@@ -139,17 +168,6 @@ export default function Sidebar() {
             </div>
           </DialogContent>
         </Dialog>
-
-        <Button 
-          variant="ghost" 
-          className={cn(
-            "justify-start gap-2 w-full text-muted-foreground hover:text-foreground",
-            isCollapsed ? "px-0 justify-center" : ""
-          )}
-        >
-          <Settings size={18} />
-          {!isCollapsed && <span>Settings</span>}
-        </Button>
       </div>
     </div>
   );

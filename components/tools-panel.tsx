@@ -50,9 +50,6 @@ export default function ContextPanel() {
   }, []);
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="p-6 border-b border-border bg-muted/10">
-        <MemoryView />
-      </div>
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         <PanelConfig
           title="Core Knowledge Base"
