@@ -2,6 +2,7 @@ import { parse } from "partial-json";
 import { handleTool } from "@/lib/tools/tools-handling";
 import useConversationStore from "@/stores/useConversationStore";
 import useToolsStore, { ToolsState } from "@/stores/useToolsStore";
+import useAgentFlowStore from "@/stores/useAgentFlowStore";
 import { Annotation } from "@/components/annotations";
 import { functionsMap } from "@/config/functions";
 
@@ -144,6 +145,13 @@ export const processMessages = async () => {
     setAssistantLoading,
   } = useConversationStore.getState();
 
+  const { 
+    setCurrentStage, 
+    updatePipelineNode, 
+    addAuditLog,
+    resetPipeline 
+  } = useAgentFlowStore.getState();
+
   const toolsState = useToolsStore.getState() as ToolsState;
 
   const allConversationItems = conversationItems;
@@ -152,6 +160,16 @@ export const processMessages = async () => {
   let functionArguments = "";
   // For streaming MCP tool call arguments
   let mcpArguments = "";
+
+  // Initialize pipeline for this turn
+  resetPipeline();
+  setCurrentStage("generation");
+  updatePipelineNode("generate", { status: "active", startTime: Date.now() });
+  addAuditLog({
+    type: "decision",
+    message: "Starting response generation",
+    severity: "info",
+  });
 
   await handleTurn(
     allConversationItems,
@@ -517,6 +535,16 @@ export const processMessages = async () => {
         case "response.completed": {
           console.log("response completed", data);
           const { response } = data;
+
+          // Mark pipeline as completed
+          const { setCurrentStage, updatePipelineNode, addAuditLog } = useAgentFlowStore.getState();
+          setCurrentStage("completed");
+          updatePipelineNode("generate", { status: "completed", endTime: Date.now() });
+          addAuditLog({
+            type: "decision",
+            message: "Response generation completed",
+            severity: "success",
+          });
 
           // Handle MCP tools list (append all lists, not just the first)
           const mcpListToolsMessages = response.output.filter(

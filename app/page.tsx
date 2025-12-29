@@ -1,10 +1,11 @@
 "use client";
 import dynamic from "next/dynamic";
 import { RotateCcw, Brain, Menu } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useConversationStore from "@/stores/useConversationStore";
 import useToolsStore from "@/stores/useToolsStore";
+import useAgentFlowStore from "@/stores/useAgentFlowStore";
 import {
   Dialog,
   DialogContent,
@@ -21,11 +22,24 @@ const Sidebar = dynamic(() => import("@/components/sidebar"), {
   loading: () => <div className="h-full w-[260px] bg-card animate-pulse" />,
 });
 
+const AgentFlowDashboard = dynamic(() => import("@/components/agent-flow"), {
+  ssr: false,
+  loading: () => <div className="h-[280px] bg-card border-t border-border animate-pulse" />,
+});
+
 export default function Main() {
   const router = useRouter();
   const { resetConversation, currentSessionId, chatMessages, switchSession, _hasHydrated } = useConversationStore();
   const { setGoogleIntegrationEnabled, setGithubEnabled } = useToolsStore();
+  const { resetPipeline, resetMetrics } = useAgentFlowStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Reset agent flow when conversation resets
+  const handleResetConversation = useCallback(() => {
+    resetConversation();
+    resetPipeline();
+    resetMetrics();
+  }, [resetConversation, resetPipeline, resetMetrics]);
 
   // Restore session on refresh
   useEffect(() => {
@@ -44,14 +58,14 @@ export default function Main() {
     
     if (isConnected === "1") {
       setGoogleIntegrationEnabled(true);
-      resetConversation();
+      handleResetConversation();
       router.replace("/", { scroll: false });
     } else if (isGithubConnected === "1") {
       setGithubEnabled(true);
-      resetConversation();
+      handleResetConversation();
       router.replace("/", { scroll: false });
     }
-  }, [router, resetConversation, setGoogleIntegrationEnabled, setGithubEnabled]);
+  }, [router, handleResetConversation, setGoogleIntegrationEnabled, setGithubEnabled]);
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -86,7 +100,7 @@ export default function Main() {
           </div>
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => resetConversation()}
+              onClick={handleResetConversation}
               className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title="Reset Conversation"
             >
@@ -95,8 +109,12 @@ export default function Main() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-hidden">
-          <Assistant />
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            <Assistant />
+          </div>
+          {/* Agent Flow Dashboard */}
+          <AgentFlowDashboard />
         </div>
       </div>
     </div>
