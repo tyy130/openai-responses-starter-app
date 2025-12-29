@@ -35,6 +35,31 @@ Follow these steps to deploy the app to Hostinger using the Node.js app option.
    - DEFAULT_VECTOR_STORE_ID / DEFAULT_VECTOR_STORE_NAME (optional)
    - ADMIN_PASSWORD (required for admin endpoints)
 
+> Note: The repository previously had a deployment command that ran `npx wrangler deploy` and failed because this is a Node/Next.js app (not a Cloudflare Worker). If your hosting provider is configured to run `npx wrangler deploy`, please update the deploy command to build and run the standalone server, or use the GitHub Action below to deploy instead.
+
+## Automatic Deploy via GitHub Actions (optional)
+
+I've added a GitHub Action `.github/workflows/deploy-hostinger.yml` that will deploy the built `.next/standalone` output to your Hostinger server over SSH. To use it, add these secrets to your repository settings:
+
+- `HOSTINGER_SSH_HOST` - Hostname or IP of the Hostinger server
+- `HOSTINGER_SSH_USER` - SSH username
+- `HOSTINGER_SSH_KEY` - Private SSH key (PEM) for the user above
+- `HOSTINGER_TARGET_DIR` - Optional target directory on the server (defaults to `~/gentel_deploy`)
+
+The action will:
+- Build the project (runs `npm run build`)
+- Package `.next/standalone`
+- Upload to the remote server with `scp`
+- Extract, install production deps, and attempt to restart `pm2` process named `gentel` (fallback will `pm2 start server.js`)
+
+If you prefer using Hostinger's built-in Git deploy or a different workflow (SFTP, FTP, or their UI), update the Hostinger App deploy command to:
+
+- Build command: `npm run build`
+- Output directory: `.next/standalone`
+- App startup file: `.next/standalone/server.js`
+
+Or set the deploy command to a custom script that runs the deploy steps you prefer.
+
 5. GitHub / Google OAuth settings:
    - For GitHub App, set Authorization callback URL(s):
      - https://teal-wasp-987766.hostingersite.com/api/oauth/github/callback
